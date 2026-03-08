@@ -480,7 +480,14 @@ fn get_ip_interface(luid: &NET_LUID_LH, is_ipv6: bool) -> std::io::Result<MIB_IP
 pub fn run_command(command: &str, args: &[&str]) -> std::io::Result<Vec<u8>> {
     let full_cmd = format!("{} {}", command, args.join(" "));
     log::debug!("Running command: \"{full_cmd}\"...");
-    let out = match std::process::Command::new(command).args(args).output() {
+    #[cfg(target_os = "windows")]
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+    let out = match std::process::Command::new(command)
+        .args(args)
+        .creation_flags(CREATE_NO_WINDOW)
+        .output()
+    {
         Ok(out) => out,
         Err(e) => {
             let e2 = e.to_string().trim().to_string();
